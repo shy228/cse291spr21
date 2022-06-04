@@ -234,27 +234,18 @@ class CRFConstituency(nn.Module):
         batch_size, seq_len, seq_len, n_labels = scores.shape
         # [seq_len, seq_len, n_labels, batch_size]
         scores = scores.permute(1, 2, 3, 0)
+        #print('scores:', scores)
         # [seq_len, seq_len, batch_size]
         mask = mask.permute(1, 2, 0)
-
+        # print('mask: ', type(mask))
+        #print(mask.shape)
         # working in the log space, initial s with log(0) == -inf
         s = torch.full_like(scores[:, :, 0], float('-inf'))
 
-        for d in range(2, seq_len + 1): # d = 2, 3, ..., seq_len
-            # define the offset variable for convenience
-            offset = d - 1
-            # n denotes the number of spans to iterate,
-            # from span (0, offset) to span (n, n+offset) given the offset
-            n = seq_len - offset
-            # diag_mask is used for ignoring the excess of each sentence
-            # [batch_size, n]
-            diag_mask = mask.diagonal(offset)
+        for i in range(seq_len):
+            s[i, i] = 0.0
 
-            ##### TODO   
-            # if d == 2:
-            #    DO something 
-            # else:
-            #    DO something
+
 
         return s
 

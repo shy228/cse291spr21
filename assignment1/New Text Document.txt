@@ -1,0 +1,18 @@
+
+Beam Search:
+	if currTime time stamp t < maxLength:
+		if map size >= capacity
+			return
+		else
+			output = decoder()
+			list = top K probability in output
+			for element in list
+				append element to the sequence list
+				if element is EOS
+					compute overall probability
+					add (sequence, probability) into the map
+				else
+					beam search to next time steam t
+
+
+

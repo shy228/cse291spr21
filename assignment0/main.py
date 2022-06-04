@@ -1,8 +1,9 @@
 # coding: utf-8
 import argparse
-import time
 import math
 import os
+import time
+
 import torch
 import torch.nn as nn
 import torch.onnx
@@ -155,7 +156,12 @@ def evaluate(data_source):
             total_loss += len(data) * criterion(output, targets).item()
     return total_loss / (len(data_source) - 1)
 
+import pandas as pd
+df_training_loss = pd.DataFrame(columns = ['epoch', 'batches', 'training_loss'])
+df_valid_loss = pd.DataFrame(columns = ['epoch', 'validation_loss'])
 
+global sub_epoch
+sub_epoch = 0
 def train():
     # Turn on training mode which enables dropout.
     model.train()
@@ -192,6 +198,9 @@ def train():
                     'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch, len(train_data) // args.bptt, lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
+            dict = {'epoch' : epoch, 'batches' : batch * sub_epoch, 'training_loss' : cur_loss}
+            global df_training_loss
+            df_training_loss = df_training_loss.append(dict, ignore_index = True)
             total_loss = 0
             start_time = time.time()
         if args.dry_run:
@@ -213,8 +222,10 @@ best_val_loss = None
 
 # At any point you can hit Ctrl + C to break out of training early.
 try:
-    for epoch in range(1, args.epochs+1):
+    for epoch in range(1, args.epochs   +1):
         epoch_start_time = time.time()
+        sub_epoch = epoch
+
         train()
         val_loss = evaluate(val_data)
         print('-' * 89)
@@ -222,6 +233,8 @@ try:
                 'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                            val_loss, math.exp(val_loss)))
         print('-' * 89)
+        dict2 = {'epoch' : epoch, 'validation_loss' : val_loss}
+        df_valid_loss = df_valid_loss.append(dict2, ignore_index=True)
         # Save the model if the validation loss is the best we've seen so far.
         if not best_val_loss or val_loss < best_val_loss:
             with open(args.save, 'wb') as f:
@@ -249,6 +262,7 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
+
 
 if len(args.onnx_export) > 0:
     # Export the model in ONNX format.
